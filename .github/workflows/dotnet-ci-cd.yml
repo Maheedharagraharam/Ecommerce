@@ -1,0 +1,37 @@
+name: .NET Microservices CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Solution
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Publish API Gateway
+      run: dotnet publish src/Gateway/ApiGateway/ApiGateway.csproj -c Release -o ./publish/gateway
+
+    - name: Publish Catalog Service
+      run: dotnet publish src/Services/Catalog/Catalog.API/Catalog.API.csproj -c Release -o ./publish/catalog
+
+    - name: Publish Ordering Service
+      run: dotnet publish src/Services/Ordering/Ordering.API/Ordering.API.csproj -c Release -o ./publish/ordering
+
+    - name: Publish Notification Worker
+      run: dotnet publish src/Services/Notification/Notification.Worker/Notification.Worker.csproj -c Release -o ./publish/notification

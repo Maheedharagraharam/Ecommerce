@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/Gateway/ApiGateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ReverseProxy__Clusters__catalog-cluster__Destinations__destination1__Address=http://catalog-service:8080
+      - ReverseProxy__Clusters__ordering-cluster__Destinations__destination1__Address=http://ordering-service:8080
+      - ReverseProxy__Clusters__notification-cluster__Destinations__destination1__Address=http://notification-service:8080
+    depends_on:
+      - catalog-service
+      - ordering-service
+      - notification-service
+    networks:
+      - microservices-network
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: src/Services/Catalog/Catalog.API/Dockerfile
+    container_name: catalog-service
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    networks:
+      - microservices-network
+
+  ordering-service:
+    build:
+      context: .
+      dockerfile: src/Services/Ordering/Ordering.API/Dockerfile
+    container_name: ordering-service
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - Services__CatalogUrl=http://catalog-service:8080
+    depends_on:
+      - catalog-service
+    networks:
+      - microservices-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: src/Services/Notification/Notification.Worker/Dockerfile
+    container_name: notification-service
+    ports:
+      - "5003:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
